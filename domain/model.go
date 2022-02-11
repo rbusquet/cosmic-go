@@ -1,10 +1,7 @@
-package allocation
+package domain
 
 import (
-	"sort"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 type OrderLine struct {
@@ -53,17 +50,4 @@ func (b *Batch) Deallocate(line OrderLine) {
 	if b.allocations[line] {
 		delete(b.allocations, line)
 	}
-}
-
-func Allocate(line OrderLine, batches ...Batch) (string, error) {
-	sort.Slice(batches, func(i, j int) bool {
-		return batches[i].ETA.Before(batches[j].ETA)
-	})
-	for _, batch := range batches {
-		if batch.CanAllocate(line) {
-			batch.Allocate(line)
-			return batch.Reference, nil
-		}
-	}
-	return "", errors.Errorf("Out of stock: no stock for sku %s", line.SKU)
 }
