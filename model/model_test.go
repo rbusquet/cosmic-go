@@ -1,42 +1,40 @@
-package domain_test
+package model_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/rbusquet/cosmic-go/domain"
+	"github.com/rbusquet/cosmic-go/model"
+	"github.com/stretchr/testify/assert"
 )
 
 type input struct {
-	batch domain.Batch
-	line  domain.OrderLine
+	batch model.Batch
+	line  model.OrderLine
 }
 
 func makeBatchAndLine(sku string, batchQty int, lineQty int) input {
-	batch := domain.NewBatch("batch-001", sku, batchQty, time.Now())
-	orderLine := domain.OrderLine{"order-123", sku, lineQty}
+	batch := model.NewBatch("batch-001", sku, batchQty, time.Now())
+	orderLine := model.OrderLine{OrderID: "order-123", SKU: sku, Quantity: lineQty}
 	return input{batch, orderLine}
 }
 
 func TestBatchAllocate(t *testing.T) {
 	t.Run("allocating to a batch reduces the available quantity", func(t *testing.T) {
-		batch := domain.NewBatch("batch-001", "SMALL-TABLE", 20, time.Now())
-		line := domain.OrderLine{"order-ref", "SMALL-TABLE", 2}
+		batch := model.NewBatch("batch-001", "SMALL-TABLE", 20, time.Now())
+		line := model.OrderLine{OrderID: "order-ref", SKU: "SMALL-TABLE", Quantity: 2}
 		batch.Allocate(line)
-		if batch.AvailableQuantity() != 18 {
-			t.Errorf("Got %d; want %d", batch.AvailableQuantity(), 18)
-		}
+
+		assert.Equal(t, 18, batch.AvailableQuantity())
 	})
 	t.Run("allocation is idempotent", func(t *testing.T) {
-		batch := domain.NewBatch("batch-001", "SMALL-TABLE", 20, time.Now())
-		line := domain.OrderLine{"order-ref", "SMALL-TABLE", 2}
+		batch := model.NewBatch("batch-001", "SMALL-TABLE", 20, time.Now())
+		line := model.OrderLine{OrderID: "order-ref", SKU: "SMALL-TABLE", Quantity: 2}
 
 		batch.Allocate(line)
 		batch.Allocate(line)
 
-		if batch.AvailableQuantity() != 18 {
-			t.Errorf("Got %d; want %d", batch.AvailableQuantity(), 18)
-		}
+		assert.Equal(t, 18, batch.AvailableQuantity())
 	})
 
 }
@@ -60,8 +58,8 @@ func TestBatchCanAllocate(t *testing.T) {
 		},
 		"cannot allocate if skus do not match": {
 			input{
-				domain.NewBatch("batch-001", "UNCOMFORTABLE-CHAIR", 100, time.Time{}),
-				domain.OrderLine{"order-123", "EXPENSIVE-TOASTER", 10},
+				model.NewBatch("batch-001", "UNCOMFORTABLE-CHAIR", 100, time.Time{}),
+				model.OrderLine{OrderID: "order-123", SKU: "EXPENSIVE-TOASTER", Quantity: 10},
 			},
 			false,
 		},
@@ -70,9 +68,7 @@ func TestBatchCanAllocate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			got := test.input.batch.CanAllocate(test.input.line)
-			if got != test.want {
-				t.Errorf("expected: %v, got: %v", test.want, got)
-			}
+			assert.Equal(t, test.want, got)
 		})
 	}
 }
