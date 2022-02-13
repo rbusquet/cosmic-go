@@ -19,6 +19,9 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.17
+      - uses: autero1/action-gotestsum@v1.0.0
+        with:
+          gotestsum_version: 1.7.0
 
       - uses: evantorrie/mott-the-tidier@v1-beta
         with:
@@ -36,4 +39,29 @@ jobs:
 
       - name: Test
         if: steps.auto-commit-action.outputs.changes_detected == false
-        run: gotestsum
+        run: gotestsum --junitfile tests.xml
+
+      - name: Upload Unit Test Results
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: Unit Test Results
+          path: tests.xml
+
+  publish-test-results:
+    name: "Publish Unit Tests Results"
+    needs: build
+    runs-on: ubuntu-latest
+    # the build-and-test job might be skipped, we don't need to run this job then
+    if: success() || failure()
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action/composite@v1
+        with:
+          files: artifacts/**/*.xml
