@@ -31,9 +31,9 @@ jobs:
           commit_message: Auto-fix go.sum discrepancies
 
       - name: Build
-        if: steps.auto-commit-action.outputs.changes_detected == 'false'
+        if: steps.auto-commit-action.outputs.changes_detected == false
         run: go build -v ./...
 
       - name: Test
-        if: steps.auto-commit-action.outputs.changes_detected == 'false'
+        if: steps.auto-commit-action.outputs.changes_detected == false
         run: go test -v ./...
