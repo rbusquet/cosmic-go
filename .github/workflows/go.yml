@@ -9,19 +9,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: cimg/go:1.17
     steps:
       - uses: actions/checkout@v2
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.PAT }}
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.17
-      - uses: autero1/action-gotestsum@v1.0.0
-        with:
-          gotestsum_version: 1.7.0
 
       - uses: evantorrie/mott-the-tidier@v1-beta
         with:
