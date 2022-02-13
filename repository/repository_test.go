@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/rbusquet/cosmic-go/model"
 	"github.com/rbusquet/cosmic-go/orm"
 	"github.com/rbusquet/cosmic-go/repository"
@@ -14,11 +15,29 @@ import (
 
 type RepositorySuite struct {
 	suite.Suite
-	db *gorm.DB
+	db  *gorm.DB
+	env map[string]string
+}
+
+func (suite *RepositorySuite) SetupSuite() {
+	env, err := godotenv.Read(".config")
+	if err == nil {
+		suite.env = env
+	}
 }
 
 func (suite *RepositorySuite) SetupTest() {
-	db := orm.InitDB(":memory:", "sqlite", true)
+	dsn := ":memory:"
+	driver := "sqlite"
+
+	if envDsn, ok := suite.env["DATABASE_HOST"]; ok {
+		dsn = envDsn
+	}
+	if envDriver, ok := suite.env["DATABASE_DRIVER"]; ok {
+		driver = envDriver
+	}
+
+	db := orm.InitDB(dsn, driver, suite.env["DEBUG"] == "1")
 	suite.db = db.Begin()
 }
 

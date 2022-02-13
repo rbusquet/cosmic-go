@@ -5,6 +5,7 @@ import (
 
 	"github.com/glebarez/sqlite"
 	"github.com/rbusquet/cosmic-go/model"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -24,7 +25,8 @@ type Batches struct {
 }
 
 var clients = map[string]func(dsn string) gorm.Dialector{
-	"sqlite": sqlite.Open,
+	"sqlite":   sqlite.Open,
+	"postgres": postgres.Open,
 }
 
 func InitDB(dns string, driver string, debug bool) *gorm.DB {
