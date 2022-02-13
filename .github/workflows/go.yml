@@ -36,4 +36,4 @@ jobs:
 
       - name: Test
         if: steps.auto-commit-action.outputs.changes_detected == false
-        run: go test -v ./...
+        run: gotestsum
