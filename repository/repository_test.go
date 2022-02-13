@@ -18,7 +18,7 @@ type RepositorySuite struct {
 }
 
 func (suite *RepositorySuite) SetupTest() {
-	db := orm.InitDB(":memory:", "sqlite", false)
+	db := orm.InitDB(":memory:", "sqlite", true)
 	suite.db = db.Begin()
 }
 
@@ -48,15 +48,15 @@ func (suite *RepositorySuite) TestRepositoryCanSaveBatch() {
 
 func (suite *RepositorySuite) insertOrderLine() int {
 	suite.db.Exec(
-		"INSERT INTO order_lines (order_id, sku, quantity)" +
-			"VALUES ('order1', 'GENERIC-SOFA', 12)",
+		"INSERT INTO order_lines (order_id, sku, quantity) "+
+			"VALUES (?, ?, ?)", "order1", "GENERIC-SOFA", 12,
 	)
 	var id int
 	rows, err := suite.db.Table("order_lines").Select("id").Where(
 		"order_id=? AND sku=?", "order1", "GENERIC-SOFA",
 	).Rows()
 	assert.NoError(suite.T(), err)
-	// defer rows.Close()
+	defer rows.Close()
 	for rows.Next() {
 		rows.Scan(&id)
 	}
@@ -66,8 +66,7 @@ func (suite *RepositorySuite) insertOrderLine() int {
 func (suite *RepositorySuite) insertBatch(batchID string) int {
 	suite.db.Exec(
 		"INSERT INTO batches (reference, sku, purchased_quantity) "+
-			"VALUES (?, 'GENERIC-SOFA', 100)",
-		batchID,
+			"VALUES (?, ?, ?)", batchID, "GENERIC-SOFA", 100,
 	)
 	var id int
 	rows, err := suite.db.Table("batches").Select("id").Where(
