@@ -1,8 +1,6 @@
 package model
 
-import (
-	"time"
-)
+import "time"
 
 type OrderLine struct {
 	OrderID  string
@@ -11,21 +9,21 @@ type OrderLine struct {
 }
 
 type Batch struct {
-	Reference string
-	SKU       string
-	ETA       time.Time
+	Reference         string
+	SKU               string
+	PurchasedQuantity int
+	ETA               time.Time
 
-	purchasedQuantity int
-	allocations       map[OrderLine]bool
+	allocations map[OrderLine]bool
 }
 
 func NewBatch(ref string, sku string, qty int, eta time.Time) Batch {
 	allocations := make(map[OrderLine]bool)
-	return Batch{ref, sku, eta, qty, allocations}
+	return Batch{Reference: ref, SKU: sku, ETA: eta, PurchasedQuantity: qty, allocations: allocations}
 }
 
 func (b *Batch) AvailableQuantity() int {
-	return b.purchasedQuantity - b.AllocatedQuantity()
+	return b.PurchasedQuantity - b.AllocatedQuantity()
 }
 
 func (b *Batch) AllocatedQuantity() int {
@@ -37,6 +35,9 @@ func (b *Batch) AllocatedQuantity() int {
 }
 
 func (b *Batch) Allocate(line OrderLine) {
+	if b.allocations == nil {
+		b.allocations = make(map[OrderLine]bool)
+	}
 	if b.CanAllocate(line) {
 		b.allocations[line] = true
 	}
