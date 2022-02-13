@@ -52,6 +52,15 @@ jobs:
     if: success() || failure()
 
     steps:
+      - name: Cache PIP Packages
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', 'composite/action.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
