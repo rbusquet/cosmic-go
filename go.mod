@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/glebarez/sqlite v1.3.5
 	github.com/joho/godotenv v1.4.0
+	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
 	gorm.io/driver/postgres v1.2.3
 	gorm.io/gorm v1.22.5
@@ -25,7 +26,6 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	golang.org/x/crypto v0.0.0-20220210151621-f4118a5b28e2 // indirect
