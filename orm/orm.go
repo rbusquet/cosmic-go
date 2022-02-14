@@ -1,8 +1,6 @@
 package orm
 
 import (
-	"database/sql"
-
 	"github.com/glebarez/sqlite"
 	"github.com/rbusquet/cosmic-go/model"
 	"gorm.io/driver/postgres"
@@ -11,17 +9,13 @@ import (
 
 type OrderLines struct {
 	gorm.Model
-	OrderLine model.OrderLine `gorm:"embedded"`
-	BatchID   *sql.NullInt64
-	Batch     Batches `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	model.OrderLine
 }
 
 type Batches struct {
 	gorm.Model
-	Batch   model.Batch  `gorm:"embedded"`
-	NullETA sql.NullTime `gorm:"column:eta"`
-
-	Allocations []OrderLines `gorm:"foreignkey:BatchID"`
+	model.Batch
+	Allocations []OrderLines `gorm:"many2many:allocations;"`
 }
 
 var clients = map[string]func(dsn string) gorm.Dialector{

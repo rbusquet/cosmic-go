@@ -9,7 +9,7 @@ import (
 )
 
 type input struct {
-	batch model.Batch
+	batch *model.Batch
 	line  model.OrderLine
 }
 

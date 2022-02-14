@@ -1,15 +1,17 @@
-package services
+package model
 
 import (
 	"sort"
 
 	"github.com/pkg/errors"
-	"github.com/rbusquet/cosmic-go/model"
 )
 
-func Allocate(line model.OrderLine, batches ...model.Batch) (reference string, err error) {
+func Allocate(line OrderLine, batches ...*Batch) (reference string, err error) {
 	sort.Slice(batches, func(i, j int) bool {
-		return batches[i].ETA.Before(batches[j].ETA)
+		leftTime := batches[i].ETA
+		rightTime := batches[j].ETA
+
+		return leftTime.Time.Before(rightTime.Time)
 	})
 	for _, batch := range batches {
 		if batch.CanAllocate(line) {

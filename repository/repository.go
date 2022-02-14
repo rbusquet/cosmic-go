@@ -10,6 +10,7 @@ type IRepository interface {
 	Add(batch *model.Batch)
 	Get(reference string) *model.Batch
 	List() []model.Batch
+	Save(batches ...*model.Batch)
 }
 
 type GormRepository struct {
@@ -41,6 +42,19 @@ func (r *GormRepository) List() []model.Batch {
 		parsedBatches = append(parsedBatches, batch.Batch)
 	}
 	return parsedBatches
+}
+
+func (r *GormRepository) Save(batches ...*model.Batch) {
+	for _, batch := range batches {
+		var batchID uint
+		r.DB.Table("batches").Where("reference = ?", batch.Reference).Select("id").Scan(&batchID)
+		var oallocations []orm.OrderLines
+		for _, allocation := range batch.Allocations() {
+			oallocations = append(oallocations, orm.OrderLines{OrderLine: allocation})
+		}
+		obatch := orm.Batches{Model: gorm.Model{ID: batchID}, Batch: *batch, Allocations: oallocations}
+		r.DB.Where("reference = ?", batch.Reference).Updates(obatch)
+	}
 }
 
 type FakeRepository struct {

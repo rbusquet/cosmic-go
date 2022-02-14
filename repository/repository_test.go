@@ -37,7 +37,7 @@ func (suite *RepositorySuite) SetupTest() {
 		driver = envDriver
 	}
 
-	db := orm.InitDB(dsn, driver, suite.env["DEBUG"] == "1")
+	db := orm.InitDB(dsn, driver, true)
 	suite.db = db.Begin()
 }
 
@@ -49,7 +49,7 @@ func (suite *RepositorySuite) TestRepositoryCanSaveBatch() {
 	zeroTime := time.Time{}
 	batch := model.NewBatch("batch1", "RUSTY-SOAPDISH", 100, zeroTime.UTC())
 	repo := repository.GormRepository{DB: suite.db}
-	repo.Add(&batch)
+	repo.Add(batch)
 
 	var reference, sku string
 	var purchased_quantity int
@@ -100,7 +100,10 @@ func (suite *RepositorySuite) insertBatch(batchID string) int {
 }
 
 func (suite *RepositorySuite) insertAllocation(orderLineID int, batchID int) {
-	suite.db.Table("order_lines").Where("id = ?", orderLineID).Update("batch_id", batchID)
+	suite.db.Exec(
+		"INSERT INTO allocations (order_lines_id, batches_id) "+
+			"VALUES (?, ?)", orderLineID, batchID,
+	)
 }
 
 func (suite *RepositorySuite) TestRepositoryCanRetrieveABatchWithAllocations() {
@@ -120,9 +123,22 @@ func (suite *RepositorySuite) TestRepositoryCanRetrieveABatchWithAllocations() {
 	assert.Equal(suite.T(), expected.SKU, retrieved.SKU)
 	assert.Equal(suite.T(), expected.PurchasedQuantity, retrieved.PurchasedQuantity)
 	assert.Equal(suite.T(), 12, retrieved.AllocatedQuantity())
-
 }
 
+func (suite *RepositorySuite) TestRepositoryCansaveBatchWithAllocations() {
+	suite.insertBatch("batch1")
+	suite.insertBatch("batch2")
+
+	repo := repository.GormRepository{DB: suite.db}
+
+	retrieved := repo.Get("batch1")
+	orderLine := model.OrderLine{OrderID: "o1", SKU: retrieved.SKU, Quantity: 1}
+	retrieved.Allocate(orderLine)
+
+	repo.Save(retrieved)
+
+	assert.Equal(suite.T(), retrieved.AllocatedQuantity(), repo.Get("batch1").AllocatedQuantity())
+}
 func TestRepositorySuite(t *testing.T) {
 	suite.Run(t, new(RepositorySuite))
 }

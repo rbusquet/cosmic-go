@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type OrderLine struct {
 	OrderID  string
@@ -12,14 +15,16 @@ type Batch struct {
 	Reference         string
 	SKU               string
 	PurchasedQuantity int
-	ETA               time.Time
+	ETA               sql.NullTime
 
 	allocations map[OrderLine]bool
 }
 
-func NewBatch(ref string, sku string, qty int, eta time.Time) Batch {
+func NewBatch(ref string, sku string, qty int, eta time.Time) *Batch {
 	allocations := make(map[OrderLine]bool)
-	return Batch{Reference: ref, SKU: sku, ETA: eta, PurchasedQuantity: qty, allocations: allocations}
+	t := sql.NullTime{Time: eta, Valid: !eta.IsZero()}
+
+	return &Batch{Reference: ref, SKU: sku, ETA: t, PurchasedQuantity: qty, allocations: allocations}
 }
 
 func (b *Batch) AvailableQuantity() int {
@@ -51,4 +56,14 @@ func (b *Batch) Deallocate(line OrderLine) {
 	if b.allocations[line] {
 		delete(b.allocations, line)
 	}
+}
+
+func (b *Batch) Allocations() []OrderLine {
+	var allocations []OrderLine
+	for line, ok := range b.allocations {
+		if ok {
+			allocations = append(allocations, line)
+		}
+	}
+	return allocations
 }
