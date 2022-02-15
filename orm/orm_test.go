@@ -16,7 +16,7 @@ type ORMSuite struct {
 }
 
 func (suite *ORMSuite) SetupTest() {
-	suite.db = orm.InitDB(":memory:", "sqlite", true)
+	suite.db = orm.InitDB(&orm.Config{Debug: true, AutoMigrate: true})
 }
 
 func (suite *ORMSuite) TestCanLoadLines() {

@@ -1,6 +1,8 @@
 package orm
 
 import (
+	"os"
+
 	"github.com/glebarez/sqlite"
 	"github.com/rbusquet/cosmic-go/model"
 	"gorm.io/driver/postgres"
@@ -23,7 +25,21 @@ var clients = map[string]func(dsn string) gorm.Dialector{
 	"postgres": postgres.Open,
 }
 
-func InitDB(dns string, driver string, debug bool) *gorm.DB {
+type Config struct {
+	Debug       bool
+	AutoMigrate bool
+}
+
+func InitDB(config *Config) *gorm.DB {
+	dns := ":memory:"
+	driver := "sqlite"
+
+	if envDns, ok := os.LookupEnv("DATABASE_HOST"); ok {
+		dns = envDns
+	}
+	if envDriver, ok := os.LookupEnv("DATABASE_DRIVER"); ok {
+		driver = envDriver
+	}
 	var db *gorm.DB
 	if client, ok := clients[driver]; ok {
 		var err error
@@ -32,9 +48,11 @@ func InitDB(dns string, driver string, debug bool) *gorm.DB {
 			panic("failed to connect database")
 		}
 	}
-	if debug {
+	if config.Debug {
 		db = db.Debug()
 	}
-	db.AutoMigrate(&OrderLines{}, &Batches{})
+	if config.AutoMigrate {
+		db.AutoMigrate(&OrderLines{}, &Batches{})
+	}
 	return db
 }

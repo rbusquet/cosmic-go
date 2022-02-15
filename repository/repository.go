@@ -58,22 +58,39 @@ func (r *GormRepository) Save(batches ...*model.Batch) {
 	}
 }
 
-type FakeRepository struct {
+type fakeRepository struct {
 	batches map[string]*model.Batch
+	Saved   bool
 }
 
-func (r *FakeRepository) Add(batch *model.Batch) {
+func NewFakeRepository(batches ...*model.Batch) *fakeRepository {
+	r := new(fakeRepository)
+	r.batches = make(map[string]*model.Batch)
+	for _, b := range batches {
+		r.batches[b.Reference] = b
+	}
+	return r
+}
+
+func (r *fakeRepository) Add(batch *model.Batch) {
 	r.batches[batch.Reference] = batch
 }
 
-func (r *FakeRepository) Get(reference string) *model.Batch {
+func (r *fakeRepository) Get(reference string) *model.Batch {
 	return r.batches[reference]
 }
 
-func (r *FakeRepository) List() []*model.Batch {
+func (r *fakeRepository) List() []*model.Batch {
 	var batches []*model.Batch
 	for _, batch := range r.batches {
 		batches = append(batches, batch)
 	}
 	return batches
+}
+
+func (r *fakeRepository) Save(batches ...*model.Batch) {
+	for _, batch := range batches {
+		r.batches[batch.Reference] = batch
+	}
+	r.Saved = true
 }

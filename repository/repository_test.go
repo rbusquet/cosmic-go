@@ -20,24 +20,11 @@ type RepositorySuite struct {
 }
 
 func (suite *RepositorySuite) SetupSuite() {
-	env, err := godotenv.Read(".config")
-	if err == nil {
-		suite.env = env
-	}
+	godotenv.Load(".config")
 }
 
 func (suite *RepositorySuite) SetupTest() {
-	dsn := ":memory:"
-	driver := "sqlite"
-
-	if envDsn, ok := suite.env["DATABASE_HOST"]; ok {
-		dsn = envDsn
-	}
-	if envDriver, ok := suite.env["DATABASE_DRIVER"]; ok {
-		driver = envDriver
-	}
-
-	db := orm.InitDB(dsn, driver, true)
+	db := orm.InitDB(&orm.Config{Debug: true, AutoMigrate: true})
 	suite.db = db.Begin()
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/rbusquet/cosmic-go/model"
 	"github.com/rbusquet/cosmic-go/repository"
+	"github.com/rbusquet/cosmic-go/services"
 	"gorm.io/gorm"
 )
 
@@ -20,26 +21,24 @@ type Params struct {
 }
 
 type Result struct {
+	Message  string `json:"message" form:"message"`
 	Batchref string `json:"batchref" form:"batchref"`
 }
 
 func (h *Handler) AllocateEndpoint(c echo.Context) error {
-
 	return h.DB.Transaction(func(tx *gorm.DB) error {
 		repo := repository.GormRepository{DB: tx}
-		batches := repo.List()
-
 		req := new(Params)
 		if err := c.Bind(req); err != nil {
 			return err
 		}
 
 		line := model.OrderLine{OrderID: req.Orderid, SKU: req.Sku, Quantity: req.Qty}
-		batchref, err := model.Allocate(line, batches...)
+		batchref, err := services.Allocate(line, &repo)
 		if err != nil {
-			return err
+			c.Logger().Error(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		repo.Save(batches...)
 
 		return c.JSON(http.StatusCreated, Result{Batchref: batchref})
 	})

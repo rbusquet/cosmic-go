@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -21,8 +22,16 @@ type E2ESuite struct {
 	skusAdded    map[interface{}]bool
 }
 
+func (suite *E2ESuite) SetupSuite() {
+	os.Setenv("DATABASE_HOST", "../allocate.db")
+}
+
+func (suite *E2ESuite) TearDownSuite() {
+	os.Unsetenv("DATABASE_HOST")
+}
+
 func (suite *E2ESuite) SetupTest() {
-	suite.db = orm.InitDB("../allocate.db", "sqlite", true)
+	suite.db = orm.InitDB(&orm.Config{Debug: true, AutoMigrate: true})
 	suite.batchesAdded = make(map[uint]bool)
 	suite.skusAdded = make(map[interface{}]bool)
 }
@@ -57,7 +66,7 @@ func (suite *E2ESuite) TearDownTest() {
 	}
 }
 
-func (suite *E2ESuite) TestApiReturnsAllocation() {
+func (suite *E2ESuite) TestApiReturns201AndAllocatedBatch() {
 	sku := e2e.RandomSku()
 	othersku := e2e.RandomSku("other")
 	earlybatch := e2e.RandomBatchref("1")
@@ -77,45 +86,22 @@ func (suite *E2ESuite) TestApiReturnsAllocation() {
 
 	var response map[string]string
 	json.NewDecoder(resp.Body).Decode(&response)
+	assert.Equal(suite.T(), 201, resp.StatusCode)
 	assert.Equal(suite.T(), earlybatch, response["batchref"])
 }
 
-func (suite *E2ESuite) TestAllocationsArePersisted() {
-	sku := e2e.RandomSku()
-	batch1 := e2e.RandomBatchref("1")
-	batch2 := e2e.RandomBatchref("2")
-	order1 := e2e.RandomOrderid("1")
-	order2 := e2e.RandomOrderid("2")
+func (suite *E2ESuite) TestUnhappy400AndErrorMessage() {
+	unknownSku := e2e.RandomSku()
+	orderid := e2e.RandomOrderid()
+	data := url.Values{"orderid": {orderid}, "sku": {unknownSku}, "qty": {"20"}}
 
-	suite.addStock(batch1, sku, 10, "2011-01-01")
-	suite.addStock(batch2, sku, 10, "2011-01-02")
-
-	line1 := url.Values{"orderid": {order1}, "sku": {sku}, "qty": {"10"}}
-	line2 := url.Values{"orderid": {order2}, "sku": {sku}, "qty": {"10"}}
-
-	resp, err := http.PostForm("http://localhost:8080/allocate", line1)
+	resp, err := http.PostForm("http://localhost:8080/allocate", data)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), 201, resp.StatusCode)
+	assert.Equal(suite.T(), 400, resp.StatusCode)
 	var response map[string]string
 	json.NewDecoder(resp.Body).Decode(&response)
-	assert.Equal(suite.T(), batch1, response["batchref"])
-
-	resp, err = http.PostForm("http://localhost:8080/allocate", line2)
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), 201, resp.StatusCode)
-	json.NewDecoder(resp.Body).Decode(&response)
-	assert.Equal(suite.T(), batch2, response["batchref"])
+	assert.Equal(suite.T(), fmt.Sprintf("Invalid SKU %s", unknownSku), response["message"])
 }
-
-//     # first order uses up all stock in batch 1
-//     r = requests.post(f"{url}/allocate", json=line1)
-//     assert r.status_code == 201
-//     assert r.json()["batchref"] == batch1
-
-//     # second order should go to batch 2
-//     r = requests.post(f"{url}/allocate", json=line2)
-//     assert r.status_code == 201
-//     assert r.json()["batchref"] == batch2
 
 func TestE2ESuite(t *testing.T) {
 	if _, ok := os.LookupEnv("RUN_E2E_TESTS"); !ok {
