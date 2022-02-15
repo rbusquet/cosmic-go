@@ -6,10 +6,10 @@ import (
 	"gorm.io/gorm"
 )
 
-type IRepository interface {
+type Repository interface {
 	Add(batch *model.Batch)
 	Get(reference string) *model.Batch
-	List() []model.Batch
+	List() []*model.Batch
 	Save(batches ...*model.Batch)
 }
 
@@ -30,16 +30,17 @@ func (r *GormRepository) Get(reference string) *model.Batch {
 	return &batch.Batch
 }
 
-func (r *GormRepository) List() []model.Batch {
+func (r *GormRepository) List() []*model.Batch {
 	var batches []orm.Batches
 	r.DB.Model(&orm.Batches{}).Preload("Allocations").Find(&batches)
 
-	var parsedBatches []model.Batch
+	var parsedBatches []*model.Batch
 	for _, batch := range batches {
+		bBatch := batch.Batch
 		for _, line := range batch.Allocations {
-			batch.Batch.Allocate(line.OrderLine)
+			bBatch.Allocate(line.OrderLine)
 		}
-		parsedBatches = append(parsedBatches, batch.Batch)
+		parsedBatches = append(parsedBatches, &bBatch)
 	}
 	return parsedBatches
 }
@@ -69,10 +70,10 @@ func (r *FakeRepository) Get(reference string) *model.Batch {
 	return r.batches[reference]
 }
 
-func (r *FakeRepository) List() []model.Batch {
-	var batches []model.Batch
+func (r *FakeRepository) List() []*model.Batch {
+	var batches []*model.Batch
 	for _, batch := range r.batches {
-		batches = append(batches, *batch)
+		batches = append(batches, batch)
 	}
 	return batches
 }
