@@ -15,8 +15,7 @@ import (
 
 type RepositorySuite struct {
 	suite.Suite
-	db  *gorm.DB
-	env map[string]string
+	db *gorm.DB
 }
 
 func (suite *RepositorySuite) SetupSuite() {

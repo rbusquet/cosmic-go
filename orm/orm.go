@@ -43,7 +43,7 @@ func InitDB(config *Config) *gorm.DB {
 	var db *gorm.DB
 	if client, ok := clients[driver]; ok {
 		var err error
-		db, err = gorm.Open(client(dns), &gorm.Config{})
+		db, err = gorm.Open(client(dns), &gorm.Config{SkipDefaultTransaction: true})
 		if err != nil {
 			panic("failed to connect database")
 		}

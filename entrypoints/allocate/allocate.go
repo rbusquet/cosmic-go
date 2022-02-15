@@ -25,19 +25,21 @@ type Result struct {
 }
 
 func (h *Handler) AllocateEndpoint(c echo.Context) error {
-	return h.DB.Transaction(func(tx *gorm.DB) error {
-		repo := repository.GormRepository{DB: tx}
-		req := new(Params)
-		if err := c.Bind(req); err != nil {
-			return err
-		}
+	tx := c.Get("db")
+	if tx == nil {
+		tx = h.DB
+	}
+	repo := repository.GormRepository{DB: tx.(*gorm.DB)}
+	req := new(Params)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
 
-		batchref, err := services.Allocate(req.Orderid, req.Sku, req.Qty, &repo)
-		if err != nil {
-			c.Logger().Error(err)
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		}
+	batchref, err := services.Allocate(req.Orderid, req.Sku, req.Qty, &repo)
+	if err != nil {
+		c.Logger().Error(err)
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 
-		return c.JSON(http.StatusCreated, Result{Batchref: batchref})
-	})
+	return c.JSON(http.StatusCreated, Result{Batchref: batchref})
 }

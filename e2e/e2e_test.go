@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"testing"
 
+	"github.com/labstack/echo/v4"
 	"github.com/rbusquet/cosmic-go/e2e"
 	"github.com/rbusquet/cosmic-go/orm"
+	"github.com/rbusquet/cosmic-go/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
@@ -20,18 +21,18 @@ type E2ESuite struct {
 	db           *gorm.DB
 	batchesAdded map[uint]bool
 	skusAdded    map[interface{}]bool
+	echo         *echo.Echo
 }
 
 func (suite *E2ESuite) SetupSuite() {
-	os.Setenv("DATABASE_HOST", "../allocate.db")
-}
+	suite.echo = echo.New()
+	suite.db = orm.InitDB(&orm.Config{Debug: true, AutoMigrate: true})
 
-func (suite *E2ESuite) TearDownSuite() {
-	os.Unsetenv("DATABASE_HOST")
+	app := server.App(suite.echo, suite.db)
+	go app()
 }
 
 func (suite *E2ESuite) SetupTest() {
-	suite.db = orm.InitDB(&orm.Config{Debug: true, AutoMigrate: true})
 	suite.batchesAdded = make(map[uint]bool)
 	suite.skusAdded = make(map[interface{}]bool)
 }
@@ -104,8 +105,5 @@ func (suite *E2ESuite) TestUnhappy400AndErrorMessage() {
 }
 
 func TestE2ESuite(t *testing.T) {
-	if _, ok := os.LookupEnv("RUN_E2E_TESTS"); !ok {
-		t.Skip()
-	}
 	suite.Run(t, new(E2ESuite))
 }
