@@ -13,15 +13,10 @@ type Handler struct {
 	DB *gorm.DB
 }
 
-type Params struct {
+type LineSerializer struct {
 	Orderid string `json:"orderid" form:"orderid"`
 	Sku     string `json:"sku" form:"sku"`
 	Qty     int    `json:"qty" form:"qty"`
-}
-
-type Result struct {
-	Message  string `json:"message" form:"message"`
-	Batchref string `json:"batchref" form:"batchref"`
 }
 
 func (h *Handler) AllocateEndpoint(c echo.Context) error {
@@ -30,7 +25,7 @@ func (h *Handler) AllocateEndpoint(c echo.Context) error {
 		tx = h.DB
 	}
 	repo := repository.GormRepository{DB: tx.(*gorm.DB)}
-	req := new(Params)
+	req := new(LineSerializer)
 	if err := c.Bind(req); err != nil {
 		return err
 	}
@@ -41,5 +36,5 @@ func (h *Handler) AllocateEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, Result{Batchref: batchref})
+	return c.JSON(http.StatusCreated, map[string]string{"batchref": batchref})
 }
