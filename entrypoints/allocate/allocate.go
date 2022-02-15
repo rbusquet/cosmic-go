@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/rbusquet/cosmic-go/model"
 	"github.com/rbusquet/cosmic-go/repository"
 	"github.com/rbusquet/cosmic-go/services"
 	"gorm.io/gorm"
@@ -33,8 +32,7 @@ func (h *Handler) AllocateEndpoint(c echo.Context) error {
 			return err
 		}
 
-		line := model.OrderLine{OrderID: req.Orderid, SKU: req.Sku, Quantity: req.Qty}
-		batchref, err := services.Allocate(line, &repo)
+		batchref, err := services.Allocate(req.Orderid, req.Sku, req.Qty, &repo)
 		if err != nil {
 			c.Logger().Error(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
