@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -30,6 +31,10 @@ func (suite *E2ESuite) SetupSuite() {
 
 	app := server.App(suite.echo, suite.db)
 	go app()
+}
+
+func (suite *E2ESuite) TearDownSuite() {
+	suite.echo.Shutdown(context.Background())
 }
 
 func (suite *E2ESuite) SetupTest() {

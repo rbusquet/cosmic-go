@@ -1,4 +1,4 @@
-package allocate
+package application
 
 import (
 	"net/http"

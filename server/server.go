@@ -5,7 +5,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/rbusquet/cosmic-go/entrypoints/allocate"
+	"github.com/rbusquet/cosmic-go/entrypoints/application"
+	appMiddleware "github.com/rbusquet/cosmic-go/entrypoints/middleware"
 	"gorm.io/gorm"
 )
 
@@ -17,9 +18,10 @@ func App(e *echo.Echo, db *gorm.DB) func() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.RemoveTrailingSlash())
 
-	handler := allocate.Handler{DB: db}
-	e.Use(handler.Transaction)
-	e.POST("/allocate", handler.AllocateEndpoint)
+	mwHandler := appMiddleware.Handler{DB: db}
+	appHandler := application.Handler{DB: db}
+	e.Use(mwHandler.Transaction)
+	e.POST("/allocate", appHandler.AllocateEndpoint)
 
 	return func() {
 		if err := e.Start(":8080"); err != nil && err != http.ErrServerClosed {
