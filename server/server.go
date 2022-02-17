@@ -11,9 +11,6 @@ import (
 )
 
 func App(e *echo.Echo, db *gorm.DB) func() {
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
-	})
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.RemoveTrailingSlash())
@@ -22,6 +19,7 @@ func App(e *echo.Echo, db *gorm.DB) func() {
 	appHandler := application.Handler{DB: db}
 	e.Use(mwHandler.Transaction)
 	e.POST("/allocate", appHandler.AllocateEndpoint)
+	e.POST("/stock", appHandler.AddBatch)
 
 	return func() {
 		if err := e.Start(":8080"); err != nil && err != http.ErrServerClosed {

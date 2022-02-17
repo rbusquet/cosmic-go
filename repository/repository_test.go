@@ -35,18 +35,20 @@ func (suite *RepositorySuite) TestRepositoryCanSaveBatch() {
 	zeroTime := time.Time{}
 	batch := model.NewBatch("batch1", "RUSTY-SOAPDISH", 100, zeroTime.UTC())
 	repo := repository.GormRepository{DB: suite.db}
-	repo.Add(batch)
+	expectedId := repo.Add(batch)
+	assert.Greater(suite.T(), expectedId, uint(0))
 
 	var reference, sku string
 	var purchased_quantity int
 	var eta time.Time
-	rows, err := suite.db.Table("batches").Select("reference", "sku", "purchased_quantity", "eta").Rows()
+	var actualId uint
+	rows, err := suite.db.Table("batches").Select("ID", "reference", "sku", "purchased_quantity", "eta").Rows()
 	assert.NoError(suite.T(), err)
 	defer rows.Close()
 	for rows.Next() {
-		rows.Scan(&reference, &sku, &purchased_quantity, &eta)
-		expected := []interface{}{"batch1", "RUSTY-SOAPDISH", 100, zeroTime.UTC()}
-		actual := []interface{}{reference, sku, purchased_quantity, eta.UTC()}
+		rows.Scan(&actualId, &reference, &sku, &purchased_quantity, &eta)
+		expected := []interface{}{expectedId, "batch1", "RUSTY-SOAPDISH", 100, zeroTime.UTC()}
+		actual := []interface{}{actualId, reference, sku, purchased_quantity, eta.UTC()}
 		assert.Equal(suite.T(), expected, actual)
 	}
 }

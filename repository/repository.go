@@ -7,7 +7,7 @@ import (
 )
 
 type Repository interface {
-	Add(batch *model.Batch)
+	Add(batch *model.Batch) uint
 	Get(reference string) *model.Batch
 	List() []*model.Batch
 	Save(batches ...*model.Batch)
@@ -17,8 +17,10 @@ type GormRepository struct {
 	DB *gorm.DB
 }
 
-func (r *GormRepository) Add(batch *model.Batch) {
-	r.DB.Table("batches").Create(batch)
+func (r *GormRepository) Add(batch *model.Batch) uint {
+	toSave := orm.Batches{Batch: *batch}
+	r.DB.Create(&toSave)
+	return toSave.ID
 }
 
 func (r *GormRepository) Get(reference string) *model.Batch {
@@ -59,25 +61,34 @@ func (r *GormRepository) Save(batches ...*model.Batch) {
 }
 
 type fakeRepository struct {
-	batches map[string]*model.Batch
+	batches map[uint]*model.Batch
 	Saved   bool
+	LastID  uint
 }
 
 func NewFakeRepository(batches ...*model.Batch) *fakeRepository {
 	r := new(fakeRepository)
-	r.batches = make(map[string]*model.Batch)
+	r.batches = make(map[uint]*model.Batch)
 	for _, b := range batches {
-		r.batches[b.Reference] = b
+		r.LastID += 1
+		r.batches[r.LastID] = b
 	}
 	return r
 }
 
-func (r *fakeRepository) Add(batch *model.Batch) {
-	r.batches[batch.Reference] = batch
+func (r *fakeRepository) Add(batch *model.Batch) uint {
+	r.LastID += 1
+	r.batches[r.LastID] = batch
+	return r.LastID
 }
 
 func (r *fakeRepository) Get(reference string) *model.Batch {
-	return r.batches[reference]
+	for _, batch := range r.batches {
+		if batch.Reference == reference {
+			return batch
+		}
+	}
+	return nil
 }
 
 func (r *fakeRepository) List() []*model.Batch {
@@ -89,8 +100,23 @@ func (r *fakeRepository) List() []*model.Batch {
 }
 
 func (r *fakeRepository) Save(batches ...*model.Batch) {
+	var newBatches []*model.Batch
 	for _, batch := range batches {
-		r.batches[batch.Reference] = batch
+		saved := false
+		for id, currentBatch := range r.batches {
+			if batch.Reference == currentBatch.Reference {
+				r.batches[id] = batch
+				saved = true
+				break
+			}
+		}
+		if !saved {
+			newBatches = append(newBatches, batch)
+		}
+	}
+	for _, batch := range newBatches {
+		r.LastID += 1
+		r.batches[r.LastID] = batch
 	}
 	r.Saved = true
 }

@@ -1,35 +1,35 @@
 package e2e_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/rbusquet/cosmic-go/e2e"
 	"github.com/rbusquet/cosmic-go/orm"
 	"github.com/rbusquet/cosmic-go/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
 )
 
 type E2ESuite struct {
 	suite.Suite
-	db           *gorm.DB
-	batchesAdded map[uint]bool
-	skusAdded    map[interface{}]bool
-	echo         *echo.Echo
+	echo *echo.Echo
 }
 
 func (suite *E2ESuite) SetupSuite() {
 	suite.echo = echo.New()
-	suite.db = orm.InitDB(&orm.Config{Debug: true, AutoMigrate: true})
+	suite.echo.Use(middleware.Logger())
+	db := orm.InitDB(&orm.Config{Debug: true, AutoMigrate: true})
 
-	app := server.App(suite.echo, suite.db)
+	app := server.App(suite.echo, db)
 	go app()
 }
 
@@ -37,39 +37,15 @@ func (suite *E2ESuite) TearDownSuite() {
 	suite.echo.Shutdown(context.Background())
 }
 
-func (suite *E2ESuite) SetupTest() {
-	suite.batchesAdded = make(map[uint]bool)
-	suite.skusAdded = make(map[interface{}]bool)
-}
-
 func (suite *E2ESuite) addStock(ref, sku, qty, eta interface{}) {
-	suite.db.Exec(
-		"INSERT INTO batches (reference, sku, purchased_quantity, eta) VALUES "+
-			"(?, ?, ?, ?)",
-		ref, sku, qty, eta,
-	)
+	res, _ := json.Marshal(map[string]interface{}{
+		"reference":          ref,
+		"sku":                sku,
+		"purchased_quantity": qty,
+		"eta":                eta,
+	})
 
-	row := suite.db.Raw("SELECT id FROM batches WHERE reference=? AND sku=?", ref, sku).Row()
-	var batchId uint
-	row.Scan(&batchId)
-
-	suite.batchesAdded[batchId] = true
-	suite.skusAdded[sku] = true
-}
-
-func (suite *E2ESuite) TearDownTest() {
-	for batch := range suite.batchesAdded {
-		suite.db.Exec(
-			"DELETE FROM allocations WHERE batches_id=?",
-			batch,
-		)
-		suite.db.Exec(
-			"DELETE FROM batches WHERE id=?", batch,
-		)
-	}
-	for sku := range suite.skusAdded {
-		suite.db.Exec("DELETE FROM order_lines WHERE sku=?", sku)
-	}
+	http.Post("http://localhost:8080/stock", "application/json", bytes.NewBuffer(res))
 }
 
 func (suite *E2ESuite) TestApiReturns201AndAllocatedBatch() {
@@ -79,9 +55,9 @@ func (suite *E2ESuite) TestApiReturns201AndAllocatedBatch() {
 	laterbatch := e2e.RandomBatchref("2")
 	otherbatch := e2e.RandomBatchref("3")
 
-	suite.addStock(laterbatch, sku, "100", "2011-01-02")
-	suite.addStock(earlybatch, sku, "100", "2011-01-01")
-	suite.addStock(otherbatch, othersku, "100", nil)
+	suite.addStock(laterbatch, sku, 100, time.Date(2011, 1, 2, 0, 0, 0, 0, time.UTC))
+	suite.addStock(earlybatch, sku, 100, time.Date(2011, 1, 1, 0, 0, 0, 0, time.UTC))
+	suite.addStock(otherbatch, othersku, 100, nil)
 
 	resp, err := http.PostForm("http://localhost:8080/allocate",
 		url.Values{"orderid": {e2e.RandomOrderid()}, "sku": {sku}, "qty": {"3"}},

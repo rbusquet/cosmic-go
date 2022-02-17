@@ -30,7 +30,7 @@ func Allocate(orderId, sku string, quantity int, repo repository.Repository) (ba
 	return result, err
 }
 
-func AddBatch(batchref, sku string, quantity int, eta time.Time, repo repository.Repository) {
+func AddBatch(batchref, sku string, quantity int, eta time.Time, repo repository.Repository) uint {
 	batch := model.NewBatch(batchref, sku, quantity, eta)
-	repo.Add(batch)
+	return repo.Add(batch)
 }
