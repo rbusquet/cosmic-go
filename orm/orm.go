@@ -52,7 +52,10 @@ func InitDB(config *Config) *gorm.DB {
 		db = db.Debug()
 	}
 	if config.AutoMigrate {
-		db.AutoMigrate(&OrderLines{}, &Batches{})
+		err := db.AutoMigrate(&OrderLines{}, &Batches{})
+		if err != nil {
+			panic("failed to automigrate")
+		}
 	}
 	return db
 }

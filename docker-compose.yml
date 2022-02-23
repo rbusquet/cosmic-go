@@ -10,6 +10,30 @@ services:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+  remix:
+    image: remixapptemplate
+    build:
+      context: frontend
+      dockerfile: ./Dockerfile
+    environment:
+      NODE_ENV: development
+    ports:
+      - "8000:3000"
+      - "8002:8002"
+    volumes:
+      - ./frontend:/usr/src/app
+    command: ["npm", "run", "dev"]
+  cosmicgo:
+    image: cosmicgo
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: dev
+    environment:
+      - DATABASE_HOST=postgres://dev:password@postgres:5432
+      - DATABASE_DRIVER=postgres
+    volumes:
+      - ./:/go/src/app
 
 volumes:
   postgres-data:

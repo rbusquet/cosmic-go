@@ -13,7 +13,7 @@ import (
 
 func main() {
 	e := echo.New()
-	db := orm.InitDB(&orm.Config{Debug: true, AutoMigrate: false})
+	db := orm.InitDB(&orm.Config{Debug: true, AutoMigrate: true})
 
 	server := server.App(e, db)
 	go server()
