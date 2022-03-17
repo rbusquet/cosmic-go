@@ -44,25 +44,15 @@ jobs:
     name: "Publish Unit Tests Results"
     needs: build
     runs-on: ubuntu-latest
-    # the build-and-test job might be skipped, we don't need to run this job then
-    if: success() || failure()
+    if: always()
 
     steps:
-      - name: Cache PIP Packages
-        uses: actions/cache@v2
-        id: cache
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', 'composite/action.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
           path: artifacts
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v1
+        uses: EnricoMi/publish-unit-test-result-action@v1
         with:
-          files: artifacts/**/*.xml
+          files: "artifacts/**/*.xml"
